@@ -1,0 +1,8 @@
+# Directories
+./model/
+./summary/
+
+# Files
+*.pyc
+*.pkl
+*.json
