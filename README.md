@@ -39,7 +39,7 @@ If you find this helps your research, please cite:
 
 #### Download data
 
-In this paper, [two-stream feature][anet-2016] was using to extract features in unit-level for [thumos14 dataset][thumos14]. The RGB feature could be downloaded here: [val set](https://drive.google.com/file/d/180YUoPvyaF2Z_T9KMKINLdDQCZEg60Jb/view?usp=sharing), [test set](https://drive.google.com/file/d/1x9Q78AZiAGqx4XB2zO3SEKp1htsATlnU/view?usp=sharing); the denseflow features can be downloaded here: [val set](https://drive.google.com/file/d/1-6dmY_Uy-H19HxvfK_wUFQCYHmlPzwFx/view?usp=sharing), [test set](https://drive.google.com/file/d/1Qm9lIJQFm5s6hDSB_2k1tj8q2tnabflJ/view?usp=sharing). Note that, val set is used for training, as the train set for THUMOS-14 does not contain untrimmed videos.
+In this paper, unit-level [two-stream feature][anet-2016] was using in [thumos14 dataset][thumos14]. The RGB feature could be downloaded here: [val set](https://drive.google.com/file/d/180YUoPvyaF2Z_T9KMKINLdDQCZEg60Jb/view?usp=sharing), [test set](https://drive.google.com/file/d/1x9Q78AZiAGqx4XB2zO3SEKp1htsATlnU/view?usp=sharing); the denseflow features can be downloaded here: [val set](https://drive.google.com/file/d/1-6dmY_Uy-H19HxvfK_wUFQCYHmlPzwFx/view?usp=sharing), [test set](https://drive.google.com/file/d/1Qm9lIJQFm5s6hDSB_2k1tj8q2tnabflJ/view?usp=sharing). Note that, val set is used for training, as the train set for THUMOS-14 does not contain untrimmed videos.
 
 #### Get the code
 
@@ -58,11 +58,9 @@ git clone git@github.com:June01/icip19-tad.git
 
 Note: Before running the code, please remember to change the path of the features(named by```self.prefix```) in ```config.py```.
 
-As to the pre-trained model, please download [here](https://drive.google.com/drive/folders/1YCk8hAJsssofapnnjxWzeIPJ3cawJWiL?usp=sharing). And the results correspond to each model could be found [here](https://drive.google.com/open?id=15p5N6A6uvUUQp1jtlnuW421g_EdvnaHg).
-
 #### Proposals
 
-The test action proposals are provided in ```props/test_proposals_from_TURN.txt```. If you want to generate your own proposals, please go to [TURN][turn] repository. Also, in this paper we report the performance according to different Average Number(AN) proposals, which are also provided in ```./props/```.
+The test action proposals are provided in ```./props/test_proposals_from_TURN.txt```. If you want to generate your own proposals, please go to [TURN][turn] repository. Also, in this paper we report the performance according to different Average Number(AN) proposals, which are also provided in ```./props/```.
 
 #### Train the network
 
@@ -72,9 +70,9 @@ In the original paper, we train the network with the following command.
 python main.py --pool_level=k --fusion_type=fusion_type
 ```
 
-```k``` is the granularity we used to divide each proposal into units. Mostly, we use```k=5``` by default. ```fusion_type``` represents the way we deal with two stream features, such as RGB, Flow, early fusion. As to the late fusion, please turn to [postprocessing](#postprocessing).
+```k``` is the granularity we used to divide each proposal into units. Mostly, we use```k=5``` by default. ```fusion_type``` represents the way we deal with two-stream features, such as RGB, Flow, early fusion. As to the late fusion, please turn to [postprocessing](#postprocessing).
 
-Note: All the results in the paper was reported on [THUMOS14 evaluation 2014][eval2014]. However, there is another one [THUMOS14 evaluation 2015][eval2015], which is not obviously stated on the website even though it should have been done years ago. (We figured out the differences between these two evaluation codes, please file an issue if any explanation about it needed.) Base on the new evaluation metric, we make some changes during training, you can train your own network with the following command. Also, the results on it could be found in the next section.
+Note: All the results in the paper was reported on [THUMOS14 evaluation 2014][eval2014]. However, there is another one [THUMOS14 evaluation 2015][eval2015], which is not obviously stated on the website even though it should have been done years ago. (We figured out the differences between these two evaluation codes, please file an issue if any explanation about it needed.) Based on the new evaluation metric, we make some changes during training, you can train your own model with the following command. Also, the results on it could be found in the next section.
 
 ```bash
 python main.py --pool_level=k --fusion_type=fusion_type --dropout=True --opm_type='adam_wd' --l1_loss=True
@@ -82,7 +80,7 @@ python main.py --pool_level=k --fusion_type=fusion_type --dropout=True --opm_typ
 
 #### Use reference models for evaluation
 
-We provide the pretrained reference models in tensorflow ```ckpt``` format, which is put in ```./model/``` in this repo.
+We provide the pretrained reference models in tensorflow ```ckpt``` format, which could be downloaded [here](https://drive.google.com/drive/folders/1YCk8hAJsssofapnnjxWzeIPJ3cawJWiL?usp=sharing). And the results correspond to each model could be found [here](https://drive.google.com/open?id=15p5N6A6uvUUQp1jtlnuW421g_EdvnaHg).
 
 First, you need to get the detection scores for all proposals by running:
 
@@ -92,22 +90,22 @@ python main.py --pool_level=k --fusion_type=fusion_type  --mode=test --cas_step=
 
 #### Postprocessing
 
-Then, the result pickle file ```PKL_FILE``` could be found in ```./eval/test_results/```, and it will be used to compute the action class it belongs to and the corresponding offsets in folder ```./eval/```.
+Then, the result pickle file ```PKL_FILE``` will be saved in ```./eval/test_results/```, and it could be used to compute the class it belongs to and the corresponding offsets.
 
 ```bash
 python gen_prop_outputs.py PKL_FILE_1 PKL_FILE_2 T
 ```
-For rgb, flow and early fusion results, ```PKL_FILE_1``` and ```PKL_FILE_2``` should be set the same; while for late fusion, ```PKL_FILE_1``` should be set to be the rgb pkl file and ```PKL_FILE_2``` should be set to be the flow pkl file. After this step, you may get the ```FINAL_PKL_FILE```. ```T=1``` for the baseline method in the paper and ```T=3``` for the improved version.
+For rgb, flow and early fusion results, ```PKL_FILE_1``` and ```PKL_FILE_2``` should be set the same; while for late fusion, ```PKL_FILE_1``` should be set to be the rgb pkl file and ```PKL_FILE_2``` should be set to be the flow pkl file. After this step, you may get the ```FUSION_PKL_FILE```. Note:```T=1``` should be set to the baseline method in the paper and ```T=3``` to the improved version.
 
-Finally, NMS is used to supppress the redundant proposals. The final predicted actions list will be save in ```./eval/after_postprocessing/```.
+Finally, NMS is used to supppress the redundant proposals. The final predicted actions list will be saved in ```./eval/after_postprocessing/```.
 
 ```bash
-python postproc.py FINAL_PKL_FILE 0.5
+python postproc.py FUSION_PKL_FILE 0.5
 ```
 
 ### Temporal Action Detection Performance on THUMOS14
 
-The mAP@0.5 performance of the baseline model we provide is ```44.85%``` under the [evaluation method 2014][eval2014]. Based on [evaluation method 2015][eval2015], we also report the important results on it as follows, which is also comparable with the state-of-the-art ```36.9%```.
+The mAP@0.5 performance of the baseline model we provide is ```44.85%``` under the [evaluation method 2014][eval2014]. Based on [evaluation method 2015][eval2015], we also report some important results on it as follows, which is also comparable with the state-of-the-art ```36.9%```.
 
 #### Table 1: mAP@tIoU(%) with different k(cascade step = 3)
 
