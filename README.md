@@ -39,7 +39,7 @@ If you find this helps your research, please cite:
 
 #### Download data
 
-In this paper, [two-stream feature][anet-2016] was using to extract features in unit-level for [thumos14 dataset][thmos14]. The RGB feature could be downloaded here: [val set](https://drive.google.com/file/d/180YUoPvyaF2Z_T9KMKINLdDQCZEg60Jb/view?usp=sharing), [test set](https://drive.google.com/file/d/1x9Q78AZiAGqx4XB2zO3SEKp1htsATlnU/view?usp=sharing); the denseflow features can be downloaded here: [val set](https://drive.google.com/file/d/1-6dmY_Uy-H19HxvfK_wUFQCYHmlPzwFx/view?usp=sharing), [test set](https://drive.google.com/file/d/1Qm9lIJQFm5s6hDSB_2k1tj8q2tnabflJ/view?usp=sharing). Note that, val set is used for training, as the train set for THUMOS-14 does not contain untrimmed videos.
+In this paper, [two-stream feature][anet-2016] was using to extract features in unit-level for [thumos14 dataset][thumos14]. The RGB feature could be downloaded here: [val set](https://drive.google.com/file/d/180YUoPvyaF2Z_T9KMKINLdDQCZEg60Jb/view?usp=sharing), [test set](https://drive.google.com/file/d/1x9Q78AZiAGqx4XB2zO3SEKp1htsATlnU/view?usp=sharing); the denseflow features can be downloaded here: [val set](https://drive.google.com/file/d/1-6dmY_Uy-H19HxvfK_wUFQCYHmlPzwFx/view?usp=sharing), [test set](https://drive.google.com/file/d/1Qm9lIJQFm5s6hDSB_2k1tj8q2tnabflJ/view?usp=sharing). Note that, val set is used for training, as the train set for THUMOS-14 does not contain untrimmed videos.
 
 #### Get the code
 
@@ -57,6 +57,8 @@ git clone git@github.com:June01/icip19-tad.git
 ```
 
 Note: Before running the code, please remember to change the path of the features(named by```self.prefix```) in ```config.py```.
+
+As to the pre-trained model, please download [here](https://drive.google.com/drive/folders/1YCk8hAJsssofapnnjxWzeIPJ3cawJWiL?usp=sharing).
 
 #### Proposals
 
@@ -93,9 +95,9 @@ python main.py --pool_level=k --fusion_type=fusion_type  --mode=test --cas_step=
 Then, the result pickle file ```PKL_FILE``` could be found in ```./eval/test_results/```, and it will be used to compute the action class it belongs to and the corresponding offsets in folder ```./eval/```.
 
 ```bash
-python gen_prop_outputs.py PKL_FILE_1 PKL_FILE_2 3
+python gen_prop_outputs.py PKL_FILE_1 PKL_FILE_2 T
 ```
-For rgb, flow and early fusion results, ```PKL_FILE_1``` and ```PKL_FILE_2``` should be set the same; while for late fusion, ```PKL_FILE_1``` should be set to be the rgb pkl file and ```PKL_FILE_2``` should be set to be the flow pkl file. After this step, you may get the ```FINAL_PKL_FILE```.
+For rgb, flow and early fusion results, ```PKL_FILE_1``` and ```PKL_FILE_2``` should be set the same; while for late fusion, ```PKL_FILE_1``` should be set to be the rgb pkl file and ```PKL_FILE_2``` should be set to be the flow pkl file. After this step, you may get the ```FINAL_PKL_FILE```. ```T=1``` for the baseline method in the paper and ```T=3``` for the improved version.
 
 Finally, NMS is used to supppress the redundant proposals. The final predicted actions list will be save in ```./eval/after_postprocessing/```.
 
