@@ -1,6 +1,6 @@
 ## Exploring Feature Representation and Training strategies in Temporal Action Localization
 
-This repo holds the codes and models for the SSN framework presented on ICIP 2019.
+This repo holds the codes and models for the temporal action localization framework presented on ICIP 2019.
 
 **Exploring Feature Representation and Training strategies in Temporal Action Localization**
 Tingting Xie, Xiaoshan Yang, Tianzhu Zhang, Changsheng Xu, Ioannis Patras, *ICIP 2019*
@@ -23,13 +23,13 @@ If you find this helps your research, please cite:
 	* [Download data](#download-data)
 	* [Get the code](#get-the-code)
 	* [Proposals](#proposals)
-	* [Train the model](#train-the-model)
-	* [Test the model](#test-the-model)
+	* [Train the network](#train-the-network)
 	* [Use reference models for evaluation](#use-reference-models-for-evaluation)
+	* [Postprocessing](#postprocessing)
 
 * [Temporal Action Detection Performance on THUMOS14](#temporal-action-detection-performance-on-thumos14)
 
-* [Other Info](#other_-nfo)
+* [Other Info](#other_info)
 	* [Related project](#related-project)
 	* [Contact](#contact)
 
@@ -53,82 +53,81 @@ GPUs are required for running this code. Usually 1 GPU and 3~4GB of the memory w
 Then clone this repo with git.
 
 ```bash
-git clone (#TODO: Add the repo address)
+git clone git@github.com:June01/icip19-tad.git
 ```
 
-Note: Before running the code, please remember to change the path to the dataset ```self.prefix``` in ```config.py```.
+Note: Before running the code, please remember to change the path of the features(named by```self.prefix```) in ```config.py```.
 
 #### Proposals
 
-The test action proposals are provided in ```props/test_proposals_from_TURN.txt```. If you want to generate your own proposals, please go to [TURN][turn] repository. Also, in this paper we report the performance according to different Average Number(AN) proposals, and these proposals are also provided in ```./props/```.
+The test action proposals are provided in ```props/test_proposals_from_TURN.txt```. If you want to generate your own proposals, please go to [TURN][turn] repository. Also, in this paper we report the performance according to different Average Number(AN) proposals, which are also provided in ```./props/```.
 
-#### Train the model
+#### Train the network
 
-In the original paper, we use the model trained in the following way.
+In the original paper, we train the network with the following command.
 
 ```bash
 python main.py --pool_level=k --fusion_type=fusion_type
 ```
 
-```k``` is the granularity we used to divide each proposal. Mostly, we use```k=5```. ```fusion_type``` represents the way we regard the two stream features, which includes 'early', 'rgb', 'flow'.(#TODO: Add 'late fusion code')
+```k``` is the granularity we used to divide each proposal into units. Mostly, we use```k=5``` by default. ```fusion_type``` represents the way we deal with two stream features, such as RGB, Flow, early fusion. As to the late fusion, please turn to [postprocessing](#postprocessing).
 
-Also, we trained an improved version of this.(#TODO: remove the variances calculation in the code)
+Note: All the results in the paper was reported on [THUMOS14 evaluation 2014][eval2014]. However, there is another one [THUMOS14 evaluation 2015][eval2015], which is not obviously stated on the website even though it should have been done years ago. (We figured out the differences between these two evaluation codes, please file an issue if any explanation about it needed.) Base on the new evaluation metric, we make some changes during training, you can train your own network with the following command. Also, the results on it could be found in the next section.
 
 ```bash
-python main.py --pool_level=k --fusion_type=fusion_type --dropout=True --opm_type='adam_wd'
+python main.py --pool_level=k --fusion_type=fusion_type --dropout=True --opm_type='adam_wd' --l1_loss=True
 ```
 
 #### Use reference models for evaluation
 
-We provide the pretrained reference models in tensorflow ```ckpt``` format, which is in ```./model/``` in this repo.
+We provide the pretrained reference models in tensorflow ```ckpt``` format, which is put in ```./model/``` in this repo.
 
-There are three steps to evaluate temporal action detection with our pretrained models. First, we will extract the detection scores for all proposals by running:
+First, you need to get the detection scores for all proposals by running:
 
 ```bash
-python main.py --pool_level=5 --fusion_type=fusion_type  --mode=test --cas_step=3 --test_model_path=MODEL_PATH
+python main.py --pool_level=k --fusion_type=fusion_type  --mode=test --cas_step=3 --test_model_path=MODEL_PATH
 ```
 
-Then, the result pickle file ```PKL_FILE``` could be found in ```./eval/test_results/```, and it will be used to find the action class it belongs to and the corresponding offsets in folder ```./eval/```.
+#### Postprocessing
+
+Then, the result pickle file ```PKL_FILE``` could be found in ```./eval/test_results/```, and it will be used to compute the action class it belongs to and the corresponding offsets in folder ```./eval/```.
 
 ```bash
-python gen_prop_outputs.py PKL_FILE 3/1(#TODO: Change it according to different versions)
+python gen_prop_outputs.py PKL_FILE_1 PKL_FILE_2 3
 ```
+For rgb, flow and early fusion results, ```PKL_FILE_1``` and ```PKL_FILE_2``` should be set the same; while for late fusion, ```PKL_FILE_1``` should be set to be the rgb pkl file and ```PKL_FILE_2``` should be set to be the flow pkl file. After this step, you may get the ```FINAL_PKL_FILE```.
 
-Finally, NMS is used to supppress the redundant proposals.
+Finally, NMS is used to supppress the redundant proposals. The final predicted actions list will be save in ```./eval/after_postprocessing/```.
 
 ```bash
-python postproc.py PKL_FILE 0.5
+python postproc.py FINAL_PKL_FILE 0.5
 ```
 
 ### Temporal Action Detection Performance on THUMOS14
 
-The mAP@0.5 performance of the baseline model we provide is ```44.85%``` under the [evaluation method 2014][eval2014]. While we find another [evaluation method 2015][eval2015], to make a fair comparison, we also report the important results on it as follows.
+The mAP@0.5 performance of the baseline model we provide is ```44.85%``` under the [evaluation method 2014][eval2014]. Based on [evaluation method 2015][eval2015], we also report the important results on it as follows, which is also comparable with the state-of-the-art ```36.9%```.
 
-#### Table 1: mAP@tIoU(%) with different fixed-size feature representation methods
+#### Table 1: mAP@tIoU(%) with different k(cascade step = 3)
 
 ```
 |      mAP@IoU (%)    |  0.3  |  0.4  |  0.5  |  0.6  |  0.7  |
-|-----------------------------|-------|-------|---------------|
-| STPP(L=2)           |       |       |       |       |       |
-| STPP(L=3)           |       |       |       |       |       |
-| BSP(2/4/2)          |       |       |       |       |       |
-| BSP(4/8/4)          |       |       |       |       |       |
-| BSP(8/16/8)         |       |       |       |       |       |
+---------------------------------------------------------------
 | Ours(k=1)           | 46.69 | 40.48 | 31.23 | 19.95 | 9.78  |
 | Ours(k=2)           | 50.20 | 43.67 | 34.31 | 23.77 | 10.83 |
 | Ours(k=5)           | 51.66 | 46.56 | 36.83 | 25.39 | 12.69 |
 | Ours(k=10)          | 52.49 | 46.58 | 37.37 | 24.54 | 12.43 |
-|-------------------------------------------------------------|
+---------------------------------------------------------------
 ```
-#### Table 2: mAP@tIoU (%) with different fusion methods.
+
+#### Table 2: mAP@tIoU (%) with different fusion methods(k=5).
 ```
 |      mAP@IoU (%)    |  0.3  |  0.4  |  0.5  |  0.6  |  0.7  |
-|-----------------------------|-------|-------|---------------|
-| RGB                 |       |       |       |       |       |
-| Flow                |       |       |       |       |       |
-| Early Fusion        |       |       |       |       |       |
-| Late Fusion         |       |       |       |       |       |
-|-------------------------------------------------------------|
+---------------------------------------------------------------
+| RGB                 | 39.07 | 33.67 | 23.55 | 13.15 | 5.70  |
+| Flow                | 47.12 | 42.05 | 33.80 | 22.89 | 12.13 |
+| Early Fusion        | 51.66 | 46.56 | 36.83 | 25.39 | 12.69 |
+| Late Fusion         | 49.77 | 44.45 | 34.98 | 21.33 | 10.36 |
+---------------------------------------------------------------
 ```
 ### Other Info
 
@@ -146,11 +145,11 @@ For any question, please file an issue or contact
 Tingting Xie: t.xie@qmul.ac.uk
 ```
 
-Also, I would like to thank Christos Tzelepis for his suggestions both in this project and the paper.
+Also, I would like to thank Yu-le Li and Christos Tzelepis for his valuable suggestions and discussions both in this project and the paper.
 
 [anet-2016]: https://github.com/yjxiong/anet2016-cuhk
 [cbr]: https://github.com/jiyanggao/CBR
 [turn]: https://github.com/jiyanggao/TURN-TAP
 [thumos14]: https://www.crcv.ucf.edu/THUMOS14/home.html
-[eval2014]: [https://www.crcv.ucf.edu/THUMOS14/THUMOS14_Evaluation.pdf]
-[eval2015]: [https://storage.googleapis.com/www.thumos.info/thumos15_zips/THUMOS14_evalkit_20150930.zip]
+[eval2014]: https://www.crcv.ucf.edu/THUMOS14/THUMOS14_Evaluation.pdf
+[eval2015]: https://storage.googleapis.com/www.thumos.info/thumos15_zips/THUMOS14_evalkit_20150930.zip
