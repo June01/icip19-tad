@@ -30,17 +30,15 @@ cat_index_dict={
     "VolleyballSpiking":20
 }
 
-def get_mean_variance_concat(vec):
+def get_mean(vec):
     '''
         Input: It should be has two dimension(n, d)
         Output: (1, d)
     '''
     mean = np.mean(vec, axis=0)
     # mean_x_square = np.mean(vec**2, axis=0)
-    # var = np.mean(mean_x_square)-mean**2
-    var = np.var(vec, axis=0)
 
-    return mean, var
+    return mean
 
 def calculate_regoffset(clip_start, clip_end, round_gt_start, round_gt_end, unit_size):
     start_offset = (round_gt_start-clip_start)/unit_size
@@ -88,9 +86,8 @@ def get_pooling_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, po
     all_feat = np.reshape(all_feat, (-1, unit_feature_size))
     
     pool_feat=[]
-    pool_var = []
     if pool_level == 1:
-        pool_feat, pool_var = get_mean_variance_concat(all_feat)
+        pool_feat = get_mean(all_feat)
     else:
         index = [int((xlen_unit/float(pool_level))*i) for i in range(pool_level)]
         index.append(int(xlen_unit-1))
@@ -101,20 +98,16 @@ def get_pooling_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, po
             else:
                 f_vec = all_feat[index[i]:index[i+1]]
 
-            mean, var = get_mean_variance_concat(f_vec)
+            mean = get_mean(f_vec)
             mean = np.reshape(mean, (-1, unit_feature_size))
-            var = np.reshape(var, (-1, unit_feature_size))
             pool_feat.append(mean)
-            pool_var.append(var)
-           
-       
+
         pool_feat = np.array(pool_feat)
-        pool_var = np.array(pool_var)
+
 
     pool_feat = np.reshape(pool_feat, (-1))
-    pool_var = np.reshape(pool_var, (-1))
 
-    return pool_feat, pool_var
+    return pool_feat
 
 def get_left_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, ctx_num, unit_size, unit_feature_size, which_feat):
     swin_step = unit_size
@@ -147,11 +140,10 @@ def get_left_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, en
     else:
         feat_vec = np.zeros([1, unit_feature_size], dtype=np.float32)
 
-    pool_feat, pool_var = get_mean_variance_concat(feat_vec)
+    pool_feat = get_mean(feat_vec)
     pool_feat = np.reshape(pool_feat, -1)
-    pool_var = np.reshape(pool_var, -1)
 
-    return pool_feat, pool_var
+    return pool_feat
 
 def get_right_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, ctx_num, unit_size, unit_feature_size, which_feat):
     swin_step = unit_size
@@ -183,11 +175,10 @@ def get_right_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, e
     else:
         feat_vec = np.zeros([1, unit_feature_size], dtype=np.float32)
 
-    pool_feat, pool_var = get_mean_variance_concat(feat_vec)
+    pool_feat = get_mean(feat_vec)
     pool_feat = np.reshape(pool_feat, -1)
-    pool_var = np.reshape(pool_var, -1)
 
-    return pool_feat, pool_var
+    return pool_feat
 
 def load_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, unit_size, unit_feature_size):
     swin_step = unit_size
@@ -210,11 +201,11 @@ def load_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, unit_size
     #pca_feat = PCA(n_components = 1024).fit_transform(all_feat)        
     return all_feat
 
-def get_BSP_feature(flow_feat_dir, appr_feat_dir, movie_name, start_f, end_f, unit_size, bsp_level):
+def get_BSP_feature(flow_feat_dir, appr_feat_dir, movie_name, start_f, end_f, unit_size, unit_feature_size, bsp_level):
 
-    num_sample_start = bsp_level/4
-    num_sample_action = bsp_level/2
-    num_sample_end = bsp_level/4
+    num_sample_start = int(bsp_level/4)
+    num_sample_action = int(bsp_level/2)
+    num_sample_end = int(bsp_level/4)
     num_sample_interpld = 1
     
     end = int(end_f/unit_size)
@@ -223,13 +214,15 @@ def get_BSP_feature(flow_feat_dir, appr_feat_dir, movie_name, start_f, end_f, un
     xlen = (end-start) + 1
 
     # map the function from segment num to features
-    start_ext = start - int(xlen/2)
+    start_ext = max(start - int(xlen/2), 0)
     end_ext = end + int(xlen/2)
     tmp_x = [i for i in range(start_ext, end_ext+1)]
 
     feature = load_feature(flow_feat_dir, appr_feat_dir, movie_name, float(start_ext*16+1), float(end_ext*16+1), unit_size, unit_feature_size)
     # print(feature.shape)
     # print(len(tmp_x), len(feature))
+    # print('---tmp_x----')
+    # print(tmp_x)
     f_action=interp1d(tmp_x,feature,axis=0)
     
     #insert(len(feature) == len(tmp_x))
@@ -242,14 +235,20 @@ def get_BSP_feature(flow_feat_dir, appr_feat_dir, movie_name, start_f, end_f, un
     #start
     plen_start= (xmin_1-xmin_0)/(num_sample_start-1)
     plen_sample = plen_start / num_sample_interpld
-    tmp_x_new = [ xmin_0 - plen_start/2 + plen_sample * ii for ii in range(num_sample_start*num_sample_interpld +1 )] 
+
+    tmp_x_new = [ min(max(xmin_0 - plen_start/2 + plen_sample * ii, start_ext), end_ext) for ii in range(num_sample_start*num_sample_interpld +1 )]
+    
+    # print('-----tmp_x_new-----')
+    # print(tmp_x_new)
     tmp_y_new_start_action=f_action(tmp_x_new)
     tmp_y_new_start = np.array([np.mean(tmp_y_new_start_action[ii*num_sample_interpld:(ii+1)*num_sample_interpld+1], axis=0) for ii in range(num_sample_start) ])
     #end
     plen_end= (xmax_1-xmax_0)/(num_sample_end-1)
     plen_sample = plen_end / num_sample_interpld
-    tmp_y_new = [ xmax_0 - plen_end/2 + plen_sample * ii for ii in range(num_sample_end*num_sample_interpld +1 )] 
+    tmp_y_new = [ min(max(xmax_0 - plen_end/2 + plen_sample * ii, start_ext),end_ext) for ii in range(num_sample_end*num_sample_interpld +1 )] 
 
+    # print('-----tmp_y_new-----')
+    # print(tmp_y_new)
     tmp_y_new_end_action=f_action(tmp_y_new)
     tmp_y_new_end = np.array([np.mean(tmp_y_new_end_action[ii*num_sample_interpld:(ii+1)*num_sample_interpld+1], axis=0) for ii in range(num_sample_end) ])
     #action
@@ -258,7 +257,7 @@ def get_BSP_feature(flow_feat_dir, appr_feat_dir, movie_name, start_f, end_f, un
     else:
         plen_action= (end-start)/(num_sample_action-1)
         plen_sample = plen_action / num_sample_interpld
-        tmp_x_new = [ start - plen_action/2 + plen_sample * ii for ii in range(num_sample_action*num_sample_interpld +1 )] 
+        tmp_x_new = [ min(max(start - plen_action/2 + plen_sample * ii, start_ext), end_ext) for ii in range(num_sample_action*num_sample_interpld +1 )]
         tmp_y_new_action=f_action(tmp_x_new)
         tmp_y_new_action = np.array([np.mean(tmp_y_new_action[ii*num_sample_interpld:(ii+1)*num_sample_interpld+1], axis=0) for ii in range(num_sample_action) ])
         
@@ -276,10 +275,11 @@ def get_SSN_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, unit_s
     xlen_unit = int(end-start)/unit_size
     start_unit = int(start/unit_size)
     end_unit = int(end/unit_size)
+    ctx_num=2
     
-    left_feat = get_left_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start+swin_step, end, which_feat)
+    left_feat = get_left_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start+swin_step, end, ctx_num, unit_size, unit_feature_size, which_feat)
     left_feat = np.reshape(left_feat, (-1))
-    right_feat = get_right_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end-swin_step, which_feat)
+    right_feat = get_right_context_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end-swin_step, ctx_num, unit_size, unit_feature_size, which_feat)
     right_feat = np.reshape(right_feat, (-1))
 
     while current_pos<end:
@@ -322,6 +322,7 @@ def get_SSN_feature(flow_feat_dir, appr_feat_dir, movie_name, start, end, unit_s
     s4_feat = np.reshape(s4_feat, (-1))
 
     final_feat = np.hstack((left_feat, s1_feat, s2_feat, middle_feat, s3_feat, s4_feat, right_feat))
+    # print(left_feat.shape, s1_feat.shape, s2_feat.shape, middle_feat.shape, s3_feat.shape, s4_feat.shape, right_feat.shape)
     # final_feat = np.hstack((left_feat, s1_feat, start_feat, s2_feat, middle_feat, s3_feat, end_feat, s4_feat, right_feat))
 
     return final_feat
@@ -408,19 +409,18 @@ class TrainingDataSet(object):
                 # print(movie_name, clip_start, clip_end)
                 if self.feat_type == 'Pool':
                     
-                    featmap, middle_var = get_pooling_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name,clip_start, clip_end, self.pool_level, self.unit_size, self.unit_feature_size, self.fusion_type)
-                    left_feat, left_var = get_left_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
-                    right_feat, right_var = get_right_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    featmap = get_pooling_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name,clip_start, clip_end, self.pool_level, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    left_feat = get_left_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    right_feat = get_right_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
                     
                     mean = np.hstack((left_feat, featmap, right_feat))
-                    var = np.hstack((left_var, middle_var, right_var))
                     
                     image_batch[index,:] = mean
 
                 elif self.feat_type == 'SSN':
                     image_batch[index,:] = get_SSN_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.unit_feature_size, self.fusion_type)
                 else:
-                    image_batch[index,:] = get_BSP_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.bsp_level)
+                    image_batch[index,:] = get_BSP_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.unit_feature_size, self.bsp_level)
 
                 label_batch[index] = self.training_samples[k][7]
                 one_hot_label_batch[index,:] = self.training_samples[k][8]
@@ -435,18 +435,17 @@ class TrainingDataSet(object):
                 clip_end = self.training_samples[k][2]
                 if self.feat_type == 'Pool':
                     
-                    featmap, middle_var = get_pooling_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name,clip_start, clip_end, self.pool_level, self.unit_size, self.unit_feature_size, self.fusion_type)
-                    left_feat, left_var = get_left_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
-                    right_feat, right_var = get_right_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    featmap = get_pooling_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name,clip_start, clip_end, self.pool_level, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    left_feat = get_left_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
+                    right_feat = get_right_context_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.ctx_num, self.unit_size, self.unit_feature_size, self.fusion_type)
                     
                     mean = np.hstack((left_feat, featmap, right_feat))
-                    var = np.hstack((left_var, middle_var, right_var))
   
                     image_batch[index,:] = mean
                 elif self.feat_type == 'SSN':
                     image_batch[index,:] = get_SSN_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.unit_feature_size, self.fusion_type)
                 else:
-                    image_batch[index,:] = get_BSP_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.bsp_level)
+                    image_batch[index,:] = get_BSP_feature(self.flow_feat_dir, self.appr_feat_dir, movie_name, clip_start, clip_end, self.unit_size, self.unit_feature_size, self.bsp_level)
                 
                 label_batch[index] = 0
                 length_batch[index] = 0

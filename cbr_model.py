@@ -354,9 +354,9 @@ class CBR_Model(object):
 
                 if self.config.feat_type == 'Pool':
 
-                    featmap, middle_var = dataset.get_pooling_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name,clip_start, clip_end, self.config.pool_level, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
-                    left_feat, left_var = dataset.get_left_context_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.ctx_num, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
-                    right_feat, right_var = dataset.get_right_context_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.ctx_num, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
+                    featmap = dataset.get_pooling_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name,clip_start, clip_end, self.config.pool_level, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
+                    left_feat = dataset.get_left_context_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.ctx_num, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
+                    right_feat = dataset.get_right_context_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.ctx_num, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
 
                     mean_ = np.hstack((left_feat, featmap, right_feat))
 

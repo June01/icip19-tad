@@ -20,7 +20,7 @@ parser.add_argument('--test_steps', default=50000, help='Model saving steps duri
 
 parser.add_argument('--action_class_num', default=20, help='Number of actions to be classified')
 
-parser.add_argument('--bsp_level', type=int, default=16, help='Check the paper for more information(three settings: 8(2/4/2), 16(4/8/4), 32(8/16/8))')
+parser.add_argument('--bsp_level', type=int, default=8, help='Check the paper for more information(three settings: 8(2/4/2), 16(4/8/4), 32(8/16/8))')
 parser.add_argument('--dropout', type=bool, choices=[True, False], default=False, help='Flag to use dropout or not')
 parser.add_argument('--feat_type', type=str, choices=['BSP', 'Pool', 'SSN'], default='Pool', help='Feature representation methods')
 parser.add_argument('--pool_level', type=int, choices=[1,2,3,4,5,6,7,10,14], default=2, help='Temporal pooling granularity')
@@ -87,7 +87,7 @@ class Config(object):
         if args.fusion_type == 'early':
             self.unit_feature_size = args.unit_feature_size
         else:
-            self.unit_feature_size = args.unit_feature_size/2
+            self.unit_feature_size = int(args.unit_feature_size/2)
 
         if args.feat_type == 'Pool':
             self.visual_feature_dim = self.unit_feature_size*(2+(args.pool_level))

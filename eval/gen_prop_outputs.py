@@ -8,7 +8,8 @@ action_class_num = 20
 unit_size = 16.0
 
 pkl_appr = sys.argv[1]
-t_v = sys.argv[2]
+pkl_flow = sys.argv[2]
+t_v = sys.argv[3]
 
 def softmax(x):
     return np.exp(x/float(t_v))/np.sum(np.exp(x/float(t_v)), axis=0)
@@ -17,9 +18,13 @@ feq_refine_early=True
 act_refine_freq = np.load('val_training_samples_16-512_window_freq.npy')
 binary_flag = True
 
-name = pkl_appr.split('.pkl')[0]
+if pkl_appr == pkl_flow:
+    name = pkl_appr.split('.pkl')[0]
+else:
+    name = 'joint'
+
 appr_dict=pickle.load(open("./test_results/"+pkl_appr, 'rb'), encoding='latin1')
-# flow_dict=pickle.load(open("./test_results/"+pkl_flow, 'rb'), encoding='latin1')
+flow_dict=pickle.load(open("./test_results/"+pkl_flow, 'rb'), encoding='latin1')
 
 result_dict = {}
 
@@ -36,13 +41,24 @@ cnt_v=0
 for line in f:
     count+=1
     # print(count, appr_dict[count])
-    if appr_dict[count] == []:
+    if appr_dict[count] == [] or flow_dict[count] == []:
         continue
     [outputs_appr] = appr_dict[count]
 
     outputs_appr1 = outputs_appr[:63]
     outputs_appr2 = outputs_appr[63:126]
     outputs_appr3 = outputs_appr[126:189]
+
+    outputs_a = (outputs_appr1+outputs_appr2+outputs_appr3)
+
+    [outputs_flow] = flow_dict[count]
+    outputs_flow1 = outputs_flow[:63]
+    outputs_flow2 = outputs_flow[63:126]
+    outputs_flow3 = outputs_flow[126:189]
+
+    outputs_f = (outputs_flow1+outputs_flow2+outputs_flow3)
+
+    outputs = (outputs_a+outputs_f)/2.0
 
     movie_name = line.rstrip().split(" ")[0]
     clip_start = float(line.rstrip().split(" ")[1])
@@ -56,7 +72,6 @@ for line in f:
         result_dict[movie_name].append([]) # cls score
         result_dict[movie_name].append([]) # label category
 
-    outputs = (outputs_appr1+outputs_appr2+outputs_appr3)
 
     action_score = np.array(outputs[:action_class_num+1])
 
@@ -65,7 +80,7 @@ for line in f:
     best_score = np.max(action_prob)
     action_cat = np.argmax(action_prob)
 
-    print(best_score, action_cat)
+    # print(best_score, action_cat)
     if action_cat == 0:
         continue
     else:
