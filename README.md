@@ -58,7 +58,7 @@ git clone git@github.com:June01/icip19-tad.git
 
 Note: Before running the code, please remember to change the path of the features(named by```self.prefix```) in ```config.py```.
 
-As to the pre-trained model, please download [here](https://drive.google.com/drive/folders/1YCk8hAJsssofapnnjxWzeIPJ3cawJWiL?usp=sharing).
+As to the pre-trained model, please download [here](https://drive.google.com/drive/folders/1YCk8hAJsssofapnnjxWzeIPJ3cawJWiL?usp=sharing). And the results correspond to each model could be found [here](https://drive.google.com/open?id=15p5N6A6uvUUQp1jtlnuW421g_EdvnaHg).
 
 #### Proposals
 
