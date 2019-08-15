@@ -362,6 +362,13 @@ class CBR_Model(object):
 
                     feat = mean_
 
+                elif self.config.feat_type == 'SSN':
+
+                    feat = dataset.get_SSN_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.unit_size, self.config.unit_feature_size, self.config.fusion_type)
+
+                else:
+                    feat = dataset.get_BSP_feature(self.test_set.flow_feat_dir, self.test_set.appr_feat_dir, movie_name, clip_start, clip_end, self.config.unit_size, self.config.unit_feature_size, self.config.bsp_level)
+
                 feat = np.reshape(feat, [1, self.config.visual_feature_dim])
 
                 feed_dict = {
